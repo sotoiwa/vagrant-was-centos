@@ -1,14 +1,16 @@
 # vagrant-was-centos
 
-ひさしぶりにtradtional WASのNetwork Deployment環境が必要になり、Vagrant上にサイレントインストールでインストールしたメモ。サイレントインストールは以下の3通りがあり、レスポンスファイルを作るのは面倒なので、コマンドモードが簡単。
+traditional WASのNetwork Deployment環境が必要になり、macOS版がないのでVagrant/VirturlBox上のCentOSに導入することにし、デスクトップ環境を入れたくないのでサイレントインストールの方法を確認したメモ。あわせてAnsibeで自動化したメモ。
 
-- レスポンスファイルを使ったサイレントインストール
-- コンソール・モード
-- コマンド・モード
+サイレントインストールは以下の3通りがあり、レスポンスファイルを作るのは面倒。コンソールモードはCUIでの対話式のインストール方法なので、自動化にはコマンドモードが簡単。
+
+- [応答ファイルを使用したパッケージのサイレント・インストール](https://www.ibm.com/support/knowledgecenter/ja/SSDV2W_1.8.5/com.ibm.silentinstall12.doc/topics/t_silent_response_file_install.html)
+- [コンソール・モードを使用したパッケージのインストール](https://www.ibm.com/support/knowledgecenter/ja/SSDV2W_1.8.5/com.ibm.cic.agent.console.doc/topics/t_console_install_packages.html)
+- [imcl コマンドの使用によるパッケージのインストール](https://www.ibm.com/support/knowledgecenter/ja/SSDV2W_1.8.5/com.ibm.cic.commandline.doc/topics/t_imcl_install.html)
 
 ## 仮想マシンの準備
 
-VMを2台Vagrantで起動する。1台でよい場合は`Vagrantfile`を修正すること。
+2台のVMをVagrantで起動する。1台でよい場合は`Vagrantfile`を修正すること。
 
 ### 前提ソフトウェア
 
@@ -33,17 +35,9 @@ VirtulBox 6.0.8、Vagrant 2.2.4、vagrant-vbguest 0.17.2の組み合わせでは
 
 - https://github.com/dotless-de/vagrant-vbguest/issues/337
 
-そのような場合はデフォルトのrsyncにしたほうがよい。`config.vm.synced_folder`をコメントアウトし、`config.vbguest.auto_update`を`false`にする。
+そのような場合はデフォルトのrsyncにしたほうがよい。`Vagrantfile`の`config.vm.synced_folder`をコメントアウトし、`config.vbguest.auto_update`を`false`にする。
 
-```Vagrantfile
-      # config.vm.synced_folder ".", "/vagrant", type:"virtualbox"
-
-      if Vagrant.has_plugin?("vagrant-vbguest")
-        config.vbguest.auto_update = false
-      end
-```
-
-スナップショットをとれるように`sahara`プラグインを入れておくと便利。
+VMのスナップショットをとれるように`sahara`プラグインも入れておくと便利。
 
 ```shell
 vagrant plugin install sahara
@@ -51,20 +45,20 @@ vagrant plugin install sahara
 
 ### リポジトリのクローン
 
-Vagrantfileを取得する。
+GitHubからリポジトリをクローンして`Vagrantfile`を取得する。
 
 ```shell
 # このgitリポジトリをクローン
-git clone https://github.com/sotoiwa/vagrant-twas-centos
+git clone https://github.com/sotoiwa/vagrant-was-centos
 # クローンしたディレクトリーに入る
-cd vagrant-twas-centos
+cd vagrant-was-centos
 # VM起動
 vagrant up
 ```
 
 ### インストールパッケージの準備
 
-ダウンロードしたWASのインストールイメージを`Vagrantfile`があるディレクトリーに置く。
+ダウンロードしたWASのインストールイメージとFixPackのファイルを`Vagrantfile`があるディレクトリーに置く。
 
 ```shell-session
 $ ls -l *.zip
@@ -85,46 +79,60 @@ $
 
 ```shell
 vagrant up
-vagrant ssh nod1
+vagrant ssh node1
 ```
 
 ## WASのインストール
 
-仮想マシン内でWASをインストールする。VMが2台の場合は両方のVMに対して実施。
+仮想マシン内でWASをインストールする。以下の作業はVMが2台の場合は両方のVMに対して実施。
 
 ### 準備
 
 - [Linux システムのインストール準備](https://www.ibm.com/support/knowledgecenter/ja/SSAW57_9.0.0/com.ibm.websphere.installation.nd.doc/ae/tins_linuxsetup.html)
 - [Red Hat Enterprise Linux 7 のインストール準備](https://www.ibm.com/support/knowledgecenter/ja/SSAW57_9.0.0/com.ibm.websphere.installation.nd.doc/ae/tins_linuxsetup_rhel7.html)
 
-以下は全て`root`で実行。
+`root`になる。
 
 ```shell
 sudo -i
 ```
 
+以下は全て`root`で実行する。
+
 ```shell
 echo 192.168.33.41 node1 >> /etc/hosts
 echo 192.168.33.41 node1 >> /etc/hosts
 ```
+
+`/etc/hosts`に名前解決エントリを追加する。
 
 ```shell
 ulimit -n 8192
 echo "ulimit -n 8192" >> .bashrc
 ```
 
+SELinuxを無効化する。
+
 ```shell
 setenforce 0
 sed -i '/^SELINUX=/c\SELINUX=disabled' /etc/selinux/config
 ```
 
+WASの前提パッケージをインストールする。
+
 ```shell
-yum install -y gtk2 libXtst xorg-x11-fonts-Type1 unzip
+yum install -y gtk2 libXtst xorg-x11-fonts-Type1
+```
+
+ファイルの解凍に使用するので`unzip`をインストールする。
+
+```shell
+yum install -y unzip
 ```
 
 ### リポジトリの準備
 
-`/vagrant`ディレクトリーからzipファイルをコピーして`/work`ディレクトリーに展開する。
+`/vagrant`ディレクトリーからzipファイルをコピーし、`/work`ディレクトリーに展開する。スクリプトでまとめ実行する。
 
 ```shell
 /vagrant/unzip_repo.sh
@@ -168,6 +176,8 @@ unzip_repo IHSPLG_FP
 
 - [インストーラーの使用によるサイレントでの Installation Manager のインストールまたは更新](https://www.ibm.com/support/knowledgecenter/ja/SSDV2W_1.8.5/com.ibm.silentinstall12.doc/topics/t_silent_installIM_IMinst.html)
 
+IIMをインストールする。
+
 ```shell
 cd /work/IIM
 ./installc -acceptLicense
@@ -177,24 +187,26 @@ cd /work/IIM
 
 - [imcl コマンドの使用によるパッケージのインストール](https://www.ibm.com/support/knowledgecenter/ja/SSDV2W_1.8.5/com.ibm.cic.commandline.doc/topics/t_imcl_install.html)
 
+WAS/IHS/プラグインをインストールする。
+
 ```shell
-# 確認
+# インストール可能なパッケージの確認
 cd /opt/IBM/InstallationManager/eclipse/tools
 ./imcl listAvailablePackages \
   -repositories /work/WAS,/work/JDK,/work/IHS,/work/PLG,/work/WAS_FP,/work/JDK_FP,/work/IHSPLG_FP
-# WAS
+# WASのインストール
 ./imcl install com.ibm.websphere.ND.v90 com.ibm.java.jdk.v8 \
   -repositories /work/WAS,/work/JDK,/work/IHS,/work/PLG,/work/WAS_FP,/work/JDK_FP,/work/IHSPLG_FP \
   -installationDirectory /opt/IBM/WebSphere/AppServer \
   -installFixes all \
   -acceptLicense
-# IHS
+# IHSのインストール
 ./imcl install com.ibm.websphere.IHS.v90 com.ibm.java.jdk.v8 \
   -repositories /work/WAS,/work/JDK,/work/IHS,/work/PLG,/work/WAS_FP,/work/JDK_FP,/work/IHSPLG_FP \
   -installationDirectory /opt/IBM/HTTPServer \
   -installFixes all \
   -acceptLicense
-# プラグイン
+# プラグインのインストール
 ./imcl install com.ibm.websphere.PLG.v90 com.ibm.java.jdk.v8 \
   -repositories /work/WAS,/work/JDK,/work/IHS,/work/PLG,/work/WAS_FP,/work/JDK_FP,/work/IHSPLG_FP \
   -installationDirectory /opt/IBM/WebSphere/Plugins \
@@ -220,7 +232,7 @@ cd /opt/IBM/WebSphere/AppServer/bin
   -adminPassword wasadmin
 ```
 
-`INSTCONFPARTIALSUCCESS`になるが、ログをみると`createProfileShortCut2StartMenuMgmt.ant`が失敗しているので、デスクトップ環境がないためと推測。
+`INSTCONFPARTIALSUCCESS`になるが、ログをみると`createProfileShortCut2StartMenuMgmt.ant`が失敗しているので、デスクトップ環境がないためであり問題ないと推測。
 
 デプロイメント・マネージャーを起動する（node1のみ）。
 
@@ -241,24 +253,26 @@ cd /opt/IBM/WebSphere/AppServer/bin
   -dmgrAdminPassword wasadmin
 ```
 
-こちらも`INSTCONFPARTIALSUCCESS`になるが、ログをみると`createProfileShortCut2StartMenuManaged.ant`が失敗しているので、デスクトップ環境がないためと推測。
+こちらも`INSTCONFPARTIALSUCCESS`になるが、ログをみると`createProfileShortCut2StartMenuManaged.ant`が失敗しているので、デスクトップ環境がないためであり問題ないと推測。
 
 ### 管理コンソールへアクセス
 
+管理コンソールにアクセスできることを確認。
+
 - https://192.168.33.41:9043/ibm/console/logon.jsp
 
-## Ansile
+## Ansible
 
-上記内容をAnsibleで実行するできるようにPlaybookにした。Vagrantで`ansible_local`というモジュールを使うこともできるが、ローカルのAnsibleを使用するようにしているため、Ansibleをインストールする。
+Ansibleを勉強中なので、上記内容をAnsibleで実行するできるようにPlaybookにした。Vagrantに`ansible_local`というモジュールもあるが、ローカルのAnsibleを使用するようにしているため、Ansibleをインストールする。
 
 ```shell
 brew install ansible
 ```
 
-VMを起動してから、Playbookを実行。
+VMを起動して、Playbookを実行。
 
 ```shell
 vagrant up && ansible-playbook -i hosts site.yml
 ```
 
-IPを直書きしていたり、Playbookに改善の余地はあるがとりあえず動いたのでOK。
+IPを直書きしていたり、Playbookに改善の余地はあるがとりあえず動いたのでOK。冪等性も考慮してあるつもり。
