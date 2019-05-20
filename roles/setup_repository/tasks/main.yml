@@ -1,0 +1,51 @@
+---
+- name: Create repo directories
+  file:
+    path: '/work/{{ item }}'
+    state: directory
+    mode: '0755'
+  with_items:
+  - IIM
+  - WAS
+  - JDK
+  - IHS
+  - PLG
+  - WAS_FP
+  - JDK_FP
+  - IHSPLG_FP
+- name: Check if all repo exixts
+  shell: |
+    test -f /work/IIM/repository.config && \
+    test -f /work/WAS/repository.config && \
+    test -f /work/JDK/repository.config && \
+    test -f /work/IHS/repository.config && \
+    test -f /work/PLG/repository.config && \
+    test -f /work/WAS_FP/repository.config && \
+    test -f /work/JDK_FP/repository.config && \
+    test -f /work/IHSPLG_FP/repository.config
+  register: result
+  check_mode: no
+  failed_when: False
+  changed_when: result.rc != 0
+- name: Unarchive repo archives
+  unarchive:
+    src: '{{ item.src }}'
+    dest: '{{ item.dest }}'
+  with_items:
+  - src: '{{ IIM_FILE }}'
+    dest: /work/IIM
+  - src: '{{ WAS_FILE }}'
+    dest: /work/WAS
+  - src: '{{ JDK_FILE }}'
+    dest: /work/JDK
+  - src: '{{ IHS_FILE }}'
+    dest: /work/IHS
+  - src: '{{ PLG_FILE }}'
+    dest: /work/PLG
+  - src: '{{ WAS_FP_FILE }}'
+    dest: /work/WAS_FP
+  - src: '{{ JDK_FP_FILE }}'
+    dest: /work/JDK_FP
+  - src: '{{ IHSPLG_FP_FILE }}'
+    dest: /work/IHSPLG_FP
+  when: result is changed

@@ -1,0 +1,30 @@
+---
+- name: Check if Dmgr01 profile exixts
+  shell: /opt/IBM/WebSphere/AppServer/bin/manageprofiles.sh -listProfiles | grep Dmgr01
+  register: result
+  check_mode: no
+  failed_when: False
+  changed_when: result.rc != 0
+- name: Create Dmgr01 profile
+  shell: |
+    rm -rf /opt/IBM/WebSphere/AppServer/profiles/Dmgr01 && \
+    /opt/IBM/WebSphere/AppServer/bin/manageprofiles.sh -create \
+      -profileName Dmgr01 \
+      -profilePath /opt/IBM/WebSphere/AppServer/profiles/Dmgr01 \
+      -templatePath /opt/IBM/WebSphere/AppServer/profileTemplates/management \
+      -serverType DEPLOYMENT_MANAGER \
+      -enableAdminSecurity true \
+      -adminUserName wasadmin \
+      -adminPassword wasadmin
+  when: result is changed
+  register: result
+  failed_when: result.rc not in [0, 2]
+- name: Check if dmgr started
+  shell: ps -ef | grep -v grep | grep java | grep dmgr
+  register: result
+  check_mode: no
+  failed_when: False
+  changed_when: result.rc != 0
+- name: Start dmgr
+  shell: /opt/IBM/WebSphere/AppServer/profiles/Dmgr01/bin/startManager.sh
+  when: result is changed

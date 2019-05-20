@@ -1,0 +1,16 @@
+- hosts: all
+  become: yes
+  roles:
+  - ping
+  - setup_server
+  - setup_repository
+  - install_was_traditional
+- hosts: dm
+  become: yes
+  roles:
+  - create_dm_profile
+- hosts: all
+  become: yes
+  #serial: 1
+  roles:
+  - create_custom_profile

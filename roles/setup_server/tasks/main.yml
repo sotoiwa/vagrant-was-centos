@@ -1,0 +1,44 @@
+---
+- name: Disable SELinux
+  selinux:
+    state: disabled
+  register: result
+- name: Change max open files
+  lineinfile:
+    path: /root/.bashrc
+    regexp: 'ulimit -n'
+    line: 'ulimit -n 8192'
+- name: Add hosts
+  lineinfile:
+    path: /etc/hosts
+    regexp: '{{ item.regexp }}'
+    line: '{{ item.line }}'
+  with_items:
+  - regexp: ^192.168.33.41
+    line: 192.168.33.41 node1
+  - regexp: ^192.168.33.42
+    line: 192.168.33.42 node2
+- name: Reboot machine
+  shell: sleep 2 && shutdown -r now
+  async: 1
+  poll: 0
+  ignore_errors: true
+  when: result is changed
+  register: result
+- name: Wait for reboot
+  wait_for_connection:
+    delay: 15
+    timeout: 300
+  when: result is changed
+- name: Update all installed packages
+  yum:
+    name: '*'
+    state: latest
+- name: Install prereq
+  yum:
+    name:
+    - gtk2
+    - libXtst
+    - xorg-x11-fonts-Type1
+    - unzip
+    state: latest

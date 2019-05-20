@@ -1,0 +1,52 @@
+---
+- name: Check if IIM installed
+  shell: test -f /opt/IBM/InstallationManager/eclipse/tools/imcl
+  register: result
+  check_mode: no
+  failed_when: False
+  changed_when: result.rc != 0
+- name: Install IIM
+  shell: /work/IIM/installc -acceptLicense
+  when: result is changed
+- name: Check if WAS installed
+  shell: /opt/IBM/InstallationManager/eclipse/tools/imcl listInstalledPackages | grep com.ibm.websphere.ND.v90
+  register: result
+  check_mode: no
+  failed_when: False
+  changed_when: result.rc != 0
+- name: Install WAS
+  shell: |
+    /opt/IBM/InstallationManager/eclipse/tools/imcl install com.ibm.websphere.ND.v90 com.ibm.java.jdk.v8 \
+      -repositories /work/WAS,/work/JDK,/work/IHS,/work/PLG,/work/WAS_FP,/work/JDK_FP,/work/IHSPLG_FP \
+      -installationDirectory /opt/IBM/WebSphere/AppServer \
+      -installFixes all \
+      -acceptLicense
+  when: result is changed
+- name: Check if IHS installed
+  shell: /opt/IBM/InstallationManager/eclipse/tools/imcl listInstalledPackages | grep com.ibm.websphere.IHS.v90
+  register: result
+  check_mode: no
+  failed_when: False
+  changed_when: result.rc != 0
+- name: Install IHS
+  shell: |
+    /opt/IBM/InstallationManager/eclipse/tools/imcl install com.ibm.websphere.IHS.v90 com.ibm.java.jdk.v8 \
+      -repositories /work/WAS,/work/JDK,/work/IHS,/work/PLG,/work/WAS_FP,/work/JDK_FP,/work/IHSPLG_FP \
+      -installationDirectory /opt/IBM/HTTPServer \
+      -installFixes all \
+      -acceptLicense
+  when: result is changed
+- name: Check if PLG installed
+  shell: /opt/IBM/InstallationManager/eclipse/tools/imcl listInstalledPackages | grep com.ibm.websphere.PLG.v90
+  register: result
+  check_mode: no
+  failed_when: False
+  changed_when: result.rc != 0
+- name: Install PLG
+  shell: |
+    /opt/IBM/InstallationManager/eclipse/tools/imcl install com.ibm.websphere.PLG.v90 com.ibm.java.jdk.v8 \
+      -repositories /work/WAS,/work/JDK,/work/IHS,/work/PLG,/work/WAS_FP,/work/JDK_FP,/work/IHSPLG_FP \
+      -installationDirectory /opt/IBM/WebSphere/Plugins \
+      -installFixes all \
+      -acceptLicense
+  when: result is changed

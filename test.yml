@@ -1,0 +1,9 @@
+- hosts: all
+  tasks:
+  - name: execute shell
+    shell: ulimit -n
+    register: return_from_shell
+    changed_when: no
+  - name: show previous shell stdout
+    debug:
+      msg: '{{ return_from_shell.stdout }}'
