@@ -1,6 +1,6 @@
 # vagrant-was-centos
 
-traditional WASのNetwork Deployment環境が必要になり、macOS版がないのでVagrant/VirturlBox上のCentOSに導入することにし、デスクトップ環境を入れたくないのでサイレントインストールの方法を確認したメモ。あわせてAnsibeで自動化したメモ。
+tWAS（WebSphere Application Server traditional）のNetwork Deployment環境が検証用に必要になり、macOS版がないのでVagrant/VirtualBox上のCentOSに導入することにし、デスクトップ環境を入れたくないのでサイレントインストールの方法を確認したメモ。あわせてAnsibleで自動化したメモ。
 
 サイレントインストールは以下の3通りがあり、レスポンスファイルを作るのは面倒。コンソールモードはCUIでの対話式のインストール方法なので、自動化にはコマンドモードが簡単。
 
