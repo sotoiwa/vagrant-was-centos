@@ -1,0 +1,12 @@
+- hosts: all
+  become: yes
+  roles:
+  - ping
+- hosts: dm
+  become: yes
+  roles:
+  - start_dm
+- hosts: all
+  become: yes
+  roles:
+  - start_node

@@ -276,3 +276,9 @@ vagrant up && ansible-playbook -i hosts site.yml
 ```
 
 IPを直書きしていたり、Playbookに改善の余地はあるがとりあえず動いたのでOK。冪等性も考慮してあるつもり。
+
+VMを再起動したあと、WASを起動するためのPlaybookも作成した。
+
+```shell
+ansible-playbook -i hosts start.yml
+```

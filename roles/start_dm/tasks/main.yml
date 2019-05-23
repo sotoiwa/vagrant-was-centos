@@ -1,0 +1,10 @@
+---
+- name: Check if dmgr started
+  shell: ps -ef | grep -v grep | grep java | grep dmgr
+  register: result
+  check_mode: no
+  failed_when: False
+  changed_when: result.rc != 0
+- name: Start dmgr
+  shell: /opt/IBM/WebSphere/AppServer/profiles/Dmgr01/bin/startManager.sh
+  when: result is changed

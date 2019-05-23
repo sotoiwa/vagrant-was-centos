@@ -1,0 +1,10 @@
+---
+- name: Check if nodeagent started
+  shell: ps -ef | grep -v grep | grep java | grep nodeagent
+  register: result
+  check_mode: no
+  failed_when: False
+  changed_when: result.rc != 0
+- name: Start nodeagent
+  shell: /opt/IBM/WebSphere/AppServer/profiles/Custom01/bin/startNode.sh
+  when: result is changed
